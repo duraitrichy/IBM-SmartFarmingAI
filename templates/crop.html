@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}Crop Advisory{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-flower2 text-success fs-3"></i>
+    <div>
+      <h4 class="fw-bold mb-0">AI Crop Advisory</h4>
+      <small class="text-muted">Personalized farming plan powered by IBM Granite</small>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-5">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent fw-semibold"><i class="bi bi-sliders me-2"></i>Crop Parameters</div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Crop</label>
+            <select id="cropInput" class="form-select">
+              {% for c in ['Rice','Wheat','Maize','Cotton','Tomato','Onion','Potato','Sugarcane','Groundnut','Soybean','Chilli','Turmeric'] %}
+              <option>{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Soil Type</label>
+              <select id="soilType" class="form-select">
+                {% for s in ['Loamy','Clay','Sandy','Alluvial','Black Cotton','Red','Laterite'] %}
+                <option>{{ s }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Season</label>
+              <select id="season" class="form-select">
+                {% for s in ['Kharif','Rabi','Zaid','Perennial'] %}
+                <option>{{ s }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold d-flex justify-content-between">Soil pH <span class="badge bg-secondary" id="soilPhVal">7.0</span></label>
+              <input type="range" id="soilPh" class="form-range" value="7.0" step="0.1" min="3" max="10" oninput="document.getElementById('soilPhVal').textContent=parseFloat(this.value).toFixed(1)">
+              <div class="d-flex justify-content-between"><small class="text-muted">3.0</small><small class="text-muted">10.0</small></div>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold d-flex justify-content-between">Farm Size (acres) <span class="badge bg-secondary" id="farmSizeVal">1</span></label>
+              <input type="range" id="farmSize" class="form-range" value="1" step="0.5" min="0.5" max="100" oninput="document.getElementById('farmSizeVal').textContent=this.value">
+              <div class="d-flex justify-content-between"><small class="text-muted">0.5</small><small class="text-muted">100</small></div>
+            </div>
+            <div class="col-4">
+              <label class="form-label small fw-semibold d-flex justify-content-between">N (kg/ha) <span class="badge bg-success" id="nitrogenVal">200</span></label>
+              <input type="range" id="nitrogen" class="form-range" value="200" step="10" min="0" max="500" oninput="document.getElementById('nitrogenVal').textContent=this.value">
+              <div class="d-flex justify-content-between"><small class="text-muted">0</small><small class="text-muted">500</small></div>
+            </div>
+            <div class="col-4">
+              <label class="form-label small fw-semibold d-flex justify-content-between">P (kg/ha) <span class="badge bg-warning text-dark" id="phosphorusVal">12</span></label>
+              <input type="range" id="phosphorus" class="form-range" value="12" step="5" min="0" max="200" oninput="document.getElementById('phosphorusVal').textContent=this.value">
+              <div class="d-flex justify-content-between"><small class="text-muted">0</small><small class="text-muted">200</small></div>
+            </div>
+            <div class="col-4">
+              <label class="form-label small fw-semibold d-flex justify-content-between">K (kg/ha) <span class="badge bg-info" id="potassiumVal">100</span></label>
+              <input type="range" id="potassium" class="form-range" value="100" step="10" min="0" max="500" oninput="document.getElementById('potassiumVal').textContent=this.value">
+              <div class="d-flex justify-content-between"><small class="text-muted">0</small><small class="text-muted">500</small></div>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold d-flex justify-content-between">Budget (₹) <span class="badge bg-primary" id="budgetVal">10,000</span></label>
+              <input type="range" id="budget" class="form-range" value="10000" step="1000" min="1000" max="200000" oninput="document.getElementById('budgetVal').textContent=Number(this.value).toLocaleString('en-IN')">
+              <div class="d-flex justify-content-between"><small class="text-muted">₹1K</small><small class="text-muted">₹2L</small></div>
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold d-flex justify-content-between">Experience (yrs) <span class="badge bg-secondary" id="experienceVal">5</span></label>
+              <input type="range" id="experience" class="form-range" value="5" step="1" min="0" max="50" oninput="document.getElementById('experienceVal').textContent=this.value">
+              <div class="d-flex justify-content-between"><small class="text-muted">0</small><small class="text-muted">50 yrs</small></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label small fw-semibold">Location</label>
+              <input type="text" id="location" class="form-control" value="Maharashtra, India">
+            </div>
+          </div>
+          <button class="btn btn-success w-100 mt-3" id="getCropAdvice">
+            <span id="cropSpinner" class="spinner-border spinner-border-sm d-none me-2"></span>
+            <i class="bi bi-stars me-1"></i>Generate Farming Plan
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-7">
+      <div id="cropResult" class="d-none">
+        <div class="card border-0 shadow-sm mb-3 border-start border-4 border-success">
+          <div class="card-header bg-transparent fw-semibold d-flex justify-content-between">
+            <span><i class="bi bi-lightbulb me-2 text-success"></i>AI Farming Plan</span>
+            <span id="confidenceBadge" class="badge bg-success"></span>
+          </div>
+          <div class="card-body">
+            <div class="row g-3 mb-3" id="cropSummaryCards"></div>
+            <div id="cropAnalysis" class="small" style="white-space:pre-wrap;max-height:500px;overflow-y:auto"></div>
+          </div>
+        </div>
+      </div>
+      <div id="cropPlaceholder" class="text-center text-muted py-5">
+        <i class="bi bi-flower2 fs-1 text-success opacity-25"></i>
+        <p class="mt-3">Fill the parameters and click <strong>Generate Farming Plan</strong></p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('getCropAdvice').addEventListener('click', ()=>{
+  document.getElementById('cropSpinner').classList.remove('d-none');
+  const payload = {
+    crop: document.getElementById('cropInput').value,
+    soil_type: document.getElementById('soilType').value,
+    season: document.getElementById('season').value,
+    soil_ph: parseFloat(document.getElementById('soilPh').value),
+    farm_size: parseFloat(document.getElementById('farmSize').value),
+    nitrogen: parseFloat(document.getElementById('nitrogen').value),
+    phosphorus: parseFloat(document.getElementById('phosphorus').value),
+    potassium: parseFloat(document.getElementById('potassium').value),
+    budget: parseFloat(document.getElementById('budget').value),
+    experience: parseInt(document.getElementById('experience').value),
+    location: document.getElementById('location').value,
+  };
+  fetch('/api/crop', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+  .then(r=>r.json())
+  .then(d=>{
+    document.getElementById('cropPlaceholder').classList.add('d-none');
+    document.getElementById('cropResult').classList.remove('d-none');
+    document.getElementById('confidenceBadge').textContent = `Confidence: ${Math.round((d.confidence_score||0)*100)}%`;
+    const cards = [
+      ['Risk Level', d.risk_level||'Low', d.risk_level==='High'?'danger':d.risk_level==='Medium'?'warning':'success'],
+      ['Est. Cost', d.estimated_cost||'—', 'info'],
+    ];
+    document.getElementById('cropSummaryCards').innerHTML = cards.map(c=>`
+      <div class="col-6"><div class="alert alert-${c[2]} py-2 small mb-0"><strong>${c[0]}:</strong> ${c[1]}</div></div>`).join('');
+    document.getElementById('cropAnalysis').textContent = d.analysis || JSON.stringify(d,null,2);
+  })
+  .catch(e=>alert('Error: '+e))
+  .finally(()=>document.getElementById('cropSpinner').classList.add('d-none'));
+});
+</script>
+{% endblock %}

@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+
+<div class="container-fluid py-4 px-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h3 class="fw-bold mb-0"><i class="bi bi-speedometer2 me-2 text-success"></i>Farm Dashboard</h3>
+      <small class="text-muted">Real-time insights powered by IBM Granite AI</small>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-outline-success" onclick="location.reload()">
+        <i class="bi bi-arrow-clockwise me-1"></i>Refresh
+      </button>
+      <a href="/report" class="btn btn-sm btn-success">
+        <i class="bi bi-download me-1"></i>Reports
+      </a>
+    </div>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="row g-3 mb-4">
+    {% for card in [
+      ('Total Recommendations', stats.total_recommendations, 'bi-lightbulb', 'success'),
+      ('Chat Sessions', stats.total_chats, 'bi-chat-dots', 'info'),
+      ('Weather Checks', stats.weather_checks, 'bi-cloud-sun', 'warning'),
+      ('Market Checks', stats.market_checks, 'bi-graph-up', 'primary'),
+    ] %}
+    <div class="col-6 col-md-3">
+      <div class="card border-0 shadow-sm">
+        <div class="card-body text-center p-3">
+          <i class="bi {{ card[2] }} fs-2 text-{{ card[3] }}"></i>
+          <div class="fs-3 fw-bold mt-1">{{ card[1] }}</div>
+          <div class="text-muted small">{{ card[0] }}</div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Charts Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent fw-semibold">
+          <i class="bi bi-bar-chart me-2 text-success"></i>Crop Yield Trend
+        </div>
+        <div class="card-body">
+          <canvas id="yieldChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent fw-semibold">
+          <i class="bi bi-pie-chart me-2 text-info"></i>AI Agent Usage
+        </div>
+        <div class="card-body">
+          <canvas id="agentPieChart" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Weather + Soil Row -->
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm" id="weatherCard">
+        <div class="card-header bg-transparent fw-semibold">
+          <i class="bi bi-cloud-sun me-2 text-warning"></i>Current Weather
+        </div>
+        <div class="card-body" id="weatherBody">
+          <div class="text-center py-3">
+            <div class="spinner-border spinner-border-sm text-success" role="status"></div>
+            <div class="small text-muted mt-2">Loading weather…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent fw-semibold">
+          <i class="bi bi-layers me-2 text-warning"></i>Soil Overview
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-2">
+            <span class="small">Nitrogen</span>
+            <span class="badge bg-success">Good</span>
+          </div>
+          <div class="progress mb-3" style="height:8px"><div class="progress-bar bg-success" style="width:68%"></div></div>
+          <div class="d-flex justify-content-between mb-2">
+            <span class="small">Phosphorus</span>
+            <span class="badge bg-warning text-dark">Low</span>
+          </div>
+          <div class="progress mb-3" style="height:8px"><div class="progress-bar bg-warning" style="width:32%"></div></div>
+          <div class="d-flex justify-content-between mb-2">
+            <span class="small">Potassium</span>
+            <span class="badge bg-info text-dark">Normal</span>
+          </div>
+          <div class="progress" style="height:8px"><div class="progress-bar bg-info" style="width:55%"></div></div>
+          <a href="/soil" class="btn btn-sm btn-outline-warning mt-3 w-100">Analyse Soil →</a>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent fw-semibold">
+          <i class="bi bi-graph-up me-2 text-primary"></i>Market Pulse
+        </div>
+        <div class="card-body" id="marketPulse">
+          <div class="text-center py-3">
+            <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Recommendations -->
+  <div class="card border-0 shadow-sm">
+    <div class="card-header bg-transparent fw-semibold d-flex justify-content-between">
+      <span><i class="bi bi-lightbulb me-2 text-success"></i>Recent AI Recommendations</span>
+      <a href="/report" class="btn btn-sm btn-outline-success">View All</a>
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr><th>Agent</th><th>Query</th><th>Risk</th><th>Confidence</th><th>Date</th></tr>
+          </thead>
+          <tbody>
+            {% for rec in recent_recs %}
+            <tr>
+              <td><span class="badge bg-success">{{ rec.agent_type }}</span></td>
+              <td class="small text-truncate" style="max-width:200px">{{ rec.query }}</td>
+              <td>
+                <span class="badge {% if rec.risk_level == 'High' %}bg-danger{% elif rec.risk_level == 'Medium' %}bg-warning text-dark{% else %}bg-success{% endif %}">
+                  {{ rec.risk_level or 'Low' }}
+                </span>
+              </td>
+              <td>
+                <div class="progress" style="height:8px;width:80px">
+                  <div class="progress-bar bg-info" style="width:{{ (rec.confidence_score or 0) * 100 }}%"></div>
+                </div>
+                <small class="text-muted">{{ "%.0f"|format((rec.confidence_score or 0) * 100) }}%</small>
+              </td>
+              <td class="small text-muted">{{ rec.created_at.strftime('%b %d') }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-center text-muted py-4">No recommendations yet. <a href="/chat">Ask the AI →</a></td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Yield Chart
+new Chart(document.getElementById('yieldChart'), {
+  type: 'line',
+  data: {
+    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug'],
+    datasets: [{
+      label: 'Yield (q/acre)',
+      data: [12,15,13,18,20,19,22,25],
+      borderColor: '#198754', backgroundColor: 'rgba(25,135,84,0.1)', fill: true, tension: 0.4
+    }]
+  },
+  options: { responsive: true, plugins: { legend: { display: false } } }
+});
+
+// Agent Pie Chart
+new Chart(document.getElementById('agentPieChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Crop','Weather','Soil','Pest','Market'],
+    datasets: [{ data: [35,25,20,10,10], backgroundColor: ['#198754','#0dcaf0','#ffc107','#dc3545','#0d6efd'] }]
+  },
+  options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+});
+
+// Load weather
+fetch('/api/weather?city=Delhi').then(r=>r.json()).then(d=>{
+  const w = d.current;
+  document.getElementById('weatherBody').innerHTML = `
+    <div class="row text-center g-2">
+      <div class="col-6"><div class="fs-2 fw-bold text-warning">${w.temperature}°C</div><div class="small text-muted">Temperature</div></div>
+      <div class="col-6"><div class="fs-2 fw-bold text-info">${w.humidity}%</div><div class="small text-muted">Humidity</div></div>
+      <div class="col-6"><div class="fw-semibold">${w.wind_speed} km/h</div><div class="small text-muted">Wind</div></div>
+      <div class="col-6"><div class="fw-semibold">${w.weather_condition}</div><div class="small text-muted">Condition</div></div>
+    </div>
+    <a href="/weather" class="btn btn-sm btn-outline-warning mt-3 w-100">Full Forecast →</a>`;
+}).catch(()=>{document.getElementById('weatherBody').innerHTML='<p class="text-muted small text-center">Weather unavailable</p>';});
+
+// Load market
+fetch('/api/market',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({crop:'tomato'})})
+.then(r=>r.json()).then(d=>{
+  const prices = d.prices || [];
+  let html = prices.slice(0,4).map(p=>`
+    <div class="d-flex justify-content-between border-bottom py-1">
+      <span class="small text-truncate">${p.market}</span>
+      <span class="badge bg-primary">₹${p.modal_price}</span>
+    </div>`).join('');
+  document.getElementById('marketPulse').innerHTML = html + '<a href="/market" class="btn btn-sm btn-outline-primary mt-2 w-100">Full Market →</a>';
+}).catch(()=>{document.getElementById('marketPulse').innerHTML='<p class="text-muted small text-center">Market data unavailable</p>';});
+</script>
+{% endblock %}

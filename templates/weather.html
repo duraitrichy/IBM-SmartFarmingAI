@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Weather Intelligence{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-cloud-sun-fill text-warning fs-3"></i>
+    <div>
+      <h4 class="fw-bold mb-0">Weather Intelligence</h4>
+      <small class="text-muted">AI-powered weather analysis and irrigation scheduling</small>
+    </div>
+  </div>
+
+  <!-- Location search -->
+  <div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+      <div class="row g-2 align-items-end">
+        <div class="col-md-5">
+          <label class="form-label small fw-semibold">Location / City</label>
+          <input type="text" id="cityInput" class="form-control" value="Delhi" placeholder="Enter city name">
+        </div>
+        <div class="col-md-4">
+          <label class="form-label small fw-semibold">Crop</label>
+          <select id="cropSelect" class="form-select">
+            {% for c in ['Rice','Wheat','Maize','Cotton','Tomato','Onion','Potato','Sugarcane'] %}
+            <option>{{ c }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-3">
+          <button class="btn btn-warning w-100" id="fetchWeatherBtn">
+            <span id="weatherSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+            <i class="bi bi-search me-1"></i>Get Weather
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Current Weather -->
+  <div id="weatherResult" class="d-none">
+    <div class="row g-3 mb-4" id="weatherCards"></div>
+
+    <!-- 7-Day Forecast -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header fw-semibold bg-transparent"><i class="bi bi-calendar-week me-2 text-warning"></i>7-Day Forecast</div>
+      <div class="card-body">
+        <div class="row g-2" id="forecastCards"></div>
+        <canvas id="tempChart" height="80" class="mt-3"></canvas>
+      </div>
+    </div>
+
+    <!-- AI Advisory -->
+    <div class="card border-0 shadow-sm border-start border-4 border-success">
+      <div class="card-header bg-transparent fw-semibold"><i class="bi bi-lightbulb me-2 text-success"></i>AI Irrigation Advisory</div>
+      <div class="card-body" id="aiWeatherAdvisory">
+        <div class="text-muted small">Loading AI analysis…</div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const icons = {'Sunny':'bi-sun','Clear':'bi-sun','Partly Cloudy':'bi-cloud-sun','Cloudy':'bi-clouds','Light Rain':'bi-cloud-drizzle','Thunderstorm':'bi-cloud-lightning-rain'};
+const iconFor = c => icons[c] || 'bi-cloud';
+
+document.getElementById('fetchWeatherBtn').addEventListener('click', () => {
+  const city = document.getElementById('cityInput').value.trim() || 'Delhi';
+  const crop = document.getElementById('cropSelect').value;
+  document.getElementById('weatherSpinner').classList.remove('d-none');
+
+  fetch(`/api/weather?city=${encodeURIComponent(city)}`, {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({city, crop})
+  })
+  .then(r=>r.json())
+  .then(d => {
+    const w = d.current;
+    const stats = [
+      ['Temperature', w.temperature+'°C', 'bi-thermometer-half', 'warning'],
+      ['Humidity', w.humidity+'%', 'bi-droplet', 'info'],
+      ['Wind Speed', w.wind_speed+' km/h', 'bi-wind', 'secondary'],
+      ['Condition', w.weather_condition, 'bi-cloud-sun', 'primary'],
+      ['Rainfall', w.rainfall+' mm', 'bi-cloud-rain', 'info'],
+      ['UV Index', w.uv_index, 'bi-sun', 'warning']
+    ];
+    document.getElementById('weatherCards').innerHTML = stats.map(s=>`
+      <div class="col-6 col-md-2">
+        <div class="card border-0 shadow-sm text-center p-3">
+          <i class="bi ${s[2]} fs-2 text-${s[3]}"></i>
+          <div class="fw-bold mt-1">${s[1]}</div>
+          <div class="text-muted small">${s[0]}</div>
+        </div>
+      </div>`).join('');
+
+    // Forecast
+    const fc = d.forecast || [];
+    document.getElementById('forecastCards').innerHTML = fc.map(f=>`
+      <div class="col text-center border rounded p-2 mx-1">
+        <div class="small fw-semibold">${f.date.slice(5)}</div>
+        <i class="bi ${iconFor(f.condition)} text-warning"></i>
+        <div class="small">${f.max_temp}°/${f.min_temp}°</div>
+        <div class="badge bg-info small">${f.rain_prob}%</div>
+      </div>`).join('');
+
+    // Chart
+    new Chart(document.getElementById('tempChart'), {
+      type:'line', data:{
+        labels: fc.map(f=>f.date.slice(5)),
+        datasets:[
+          {label:'Max °C', data:fc.map(f=>f.max_temp), borderColor:'#ffc107', fill:false, tension:0.4},
+          {label:'Min °C', data:fc.map(f=>f.min_temp), borderColor:'#0dcaf0', fill:false, tension:0.4}
+        ]
+      },
+      options:{responsive:true, plugins:{legend:{position:'top'}}}
+    });
+
+    // AI Advisory
+    const adv = d.agent;
+    document.getElementById('aiWeatherAdvisory').innerHTML = `
+      <div class="mb-2"><strong>Analysis:</strong></div>
+      <p class="small">${(adv.analysis||'').replace(/\n/g,'<br>').slice(0,800)}</p>
+      <div class="alert alert-success py-2 small"><strong>Irrigation Action:</strong><br>${(adv.recommended_action||'').slice(0,300)}</div>`;
+
+    document.getElementById('weatherResult').classList.remove('d-none');
+  })
+  .catch(e => alert('Failed to load weather: '+e))
+  .finally(()=>document.getElementById('weatherSpinner').classList.add('d-none'));
+});
+</script>
+{% endblock %}

@@ -1,0 +1,44 @@
+# ── Secrets ── NEVER commit
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+venv311/
+.venv/
+
+# Flask session
+.flask_session/
+
+# Database
+*.db
+*.sqlite3
+database/chroma_db/
+
+# Runtime folders (kept via .gitkeep)
+uploads/*
+!uploads/.gitkeep
+reports/*
+!reports/.gitkeep
+logs/*
+!logs/.gitkeep
+models/*
+!models/.gitkeep
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Tests
+.pytest_cache/
+.coverage
+htmlcov/

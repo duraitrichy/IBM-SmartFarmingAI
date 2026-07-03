@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Market Intelligence{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-graph-up-arrow text-primary fs-3"></i>
+    <div>
+      <h4 class="fw-bold mb-0">Market Intelligence</h4>
+      <small class="text-muted">Live prices, demand forecasts, and profit strategy</small>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <label class="form-label small fw-semibold">Crop</label>
+      <select id="marketCrop" class="form-select">
+        {% for c in ['Tomato','Onion','Potato','Rice','Wheat','Maize','Cotton','Groundnut','Soybean','Chilli','Turmeric','Sugarcane'] %}
+        <option>{{ c }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small fw-semibold">Quantity (quintals)</label>
+      <input type="number" id="quantity" class="form-control" value="10" min="1">
+    </div>
+    <div class="col-md-3">
+      <label class="form-label small fw-semibold">State</label>
+      <input type="text" id="marketState" class="form-control" value="Maharashtra">
+    </div>
+    <div class="col-md-2 d-flex align-items-end">
+      <button class="btn btn-primary w-100" id="getMarketBtn">
+        <span id="marketSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>
+        <i class="bi bi-search me-1"></i>Analyse
+      </button>
+    </div>
+  </div>
+
+  <!-- Price Cards -->
+  <div class="row g-3 mb-4" id="priceCards"></div>
+
+  <!-- Charts Row -->
+  <div class="row g-3 mb-4" id="chartsRow" style="display:none!important">
+    <div class="col-md-7">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent fw-semibold"><i class="bi bi-bar-chart me-2 text-primary"></i>Mandi Price Comparison</div>
+        <div class="card-body"><canvas id="priceBarChart" height="200"></canvas></div>
+      </div>
+    </div>
+    <div class="col-md-5">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent fw-semibold"><i class="bi bi-graph-up me-2 text-success"></i>30-Day Price Trend</div>
+        <div class="card-body"><canvas id="trendChart" height="200"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Market Report -->
+  <div id="aiMarketReport" class="d-none">
+    <div class="card border-0 shadow-sm border-start border-4 border-primary">
+      <div class="card-header bg-transparent fw-semibold d-flex justify-content-between">
+        <span><i class="bi bi-cpu me-2 text-primary"></i>AI Market Intelligence Report</span>
+        <span id="marketConfidence" class="badge bg-primary"></span>
+      </div>
+      <div class="card-body">
+        <div class="row g-2 mb-3" id="marketSummaryCards"></div>
+        <div id="marketAnalysis" class="small" style="white-space:pre-wrap;max-height:500px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let barChartInst, trendChartInst;
+document.getElementById('getMarketBtn').addEventListener('click', ()=>{
+  const crop = document.getElementById('marketCrop').value;
+  document.getElementById('marketSpinner').classList.remove('d-none');
+  fetch('/api/market',{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({crop, quantity:parseInt(document.getElementById('quantity').value), state:document.getElementById('marketState').value})})
+  .then(r=>r.json())
+  .then(d=>{
+    const prices = d.prices||[];
+    // Price cards
+    document.getElementById('priceCards').innerHTML = prices.slice(0,5).map(p=>`
+      <div class="col-md-4 col-6">
+        <div class="card border-0 shadow-sm text-center p-3">
+          <div class="small text-muted text-truncate">${p.market}</div>
+          <div class="fs-4 fw-bold text-primary">₹${p.modal_price}</div>
+          <div class="small text-muted">Min ₹${p.min_price} — Max ₹${p.max_price}</div>
+        </div>
+      </div>`).join('');
+
+    // Bar chart
+    document.getElementById('chartsRow').style.removeProperty('display');
+    if(barChartInst) barChartInst.destroy();
+    barChartInst = new Chart(document.getElementById('priceBarChart'), {
+      type:'bar', data:{
+        labels: prices.slice(0,5).map(p=>p.market.split(' ')[0]),
+        datasets:[
+          {label:'Min',data:prices.slice(0,5).map(p=>p.min_price),backgroundColor:'rgba(13,202,240,0.5)'},
+          {label:'Modal',data:prices.slice(0,5).map(p=>p.modal_price),backgroundColor:'rgba(25,135,84,0.8)'},
+          {label:'Max',data:prices.slice(0,5).map(p=>p.max_price),backgroundColor:'rgba(255,193,7,0.5)'}
+        ]},
+      options:{responsive:true,plugins:{legend:{position:'top'}}}
+    });
+
+    // AI report
+    const ai = d.agent||{};
+    document.getElementById('aiMarketReport').classList.remove('d-none');
+    document.getElementById('marketConfidence').textContent = `Confidence: ${Math.round((ai.confidence_score||0)*100)}%`;
+    const riskColor = ai.risk_level==='High'?'danger':ai.risk_level==='Medium'?'warning':'success';
+    document.getElementById('marketSummaryCards').innerHTML = `
+      <div class="col-md-4"><div class="alert alert-${riskColor} py-2 small mb-0"><strong>Market Risk:</strong> ${ai.risk_level||'Low'}</div></div>
+      <div class="col-md-4"><div class="alert alert-info py-2 small mb-0"><strong>MSP:</strong> ₹${d.agent?.msp||'—'}/quintal</div></div>
+      <div class="col-md-4"><div class="alert alert-success py-2 small mb-0"><strong>Best Action:</strong> ${(ai.recommended_action||'').slice(0,40)}…</div></div>`;
+    document.getElementById('marketAnalysis').textContent = ai.analysis||'';
+  })
+  .catch(e=>alert('Error: '+e))
+  .finally(()=>document.getElementById('marketSpinner').classList.add('d-none'));
+});
+</script>
+{% endblock %}

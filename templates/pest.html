@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Pest Detection{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-bug-fill text-danger fs-3"></i>
+    <div>
+      <h4 class="fw-bold mb-0">Pest & Disease Detection</h4>
+      <small class="text-muted">Upload a leaf image or describe symptoms — IBM Granite Vision will diagnose</small>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-5">
+      <div class="card border-0 shadow-sm mb-3">
+        <div class="card-header bg-transparent fw-semibold"><i class="bi bi-camera me-2"></i>Image Upload</div>
+        <div class="card-body">
+          <div id="dropZone" class="upload-zone rounded-3 text-center p-4 mb-3">
+            <i class="bi bi-cloud-upload fs-1 text-muted"></i>
+            <p class="text-muted small mt-2">Drag & drop or click to upload<br><small>JPG, JPEG, PNG — max 16MB</small></p>
+            <input type="file" id="imageUpload" accept=".jpg,.jpeg,.png" class="d-none">
+          </div>
+          <img id="previewImg" class="img-fluid rounded-3 d-none mb-3" alt="Preview">
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Crop</label>
+            <select id="pestCrop" class="form-select">
+              {% for c in ['Rice','Wheat','Tomato','Potato','Cotton','Maize','Groundnut','Onion'] %}
+              <option>{{ c }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Symptoms (optional)</label>
+            <textarea id="symptoms" class="form-control" rows="3" placeholder="Describe what you see: yellow spots, brown patches, wilting…"></textarea>
+          </div>
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Affected Area (%)</label>
+              <input type="number" id="affectedArea" class="form-control" value="20" min="1" max="100">
+            </div>
+            <div class="col-6">
+              <label class="form-label small fw-semibold">Duration</label>
+              <input type="text" id="duration" class="form-control" value="3 days" placeholder="e.g. 3 days">
+            </div>
+          </div>
+          <button class="btn btn-danger w-100 mt-3" id="detectPestBtn">
+            <span id="pestSpinner" class="spinner-border spinner-border-sm d-none me-2"></span>
+            <i class="bi bi-search me-1"></i>Detect Pest / Disease
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-7">
+      <div id="pestPlaceholder" class="text-center text-muted py-5">
+        <i class="bi bi-bug fs-1 text-danger opacity-25"></i>
+        <p class="mt-3">Upload an image or describe symptoms to begin diagnosis</p>
+      </div>
+      <div id="pestResult" class="d-none">
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-transparent fw-semibold d-flex justify-content-between">
+            <span><i class="bi bi-cpu me-2 text-danger"></i>IBM Granite Vision Diagnosis</span>
+            <span id="pestConfidence" class="badge bg-danger"></span>
+          </div>
+          <div class="card-body">
+            <div class="row g-2 mb-3" id="pestSummaryCards"></div>
+            <ul class="nav nav-tabs mb-3" id="pestTabs">
+              <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tabAnalysis">Full Analysis</button></li>
+              <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabOrganic">Organic</button></li>
+              <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tabChemical">Chemical</button></li>
+            </ul>
+            <div class="tab-content">
+              <div class="tab-pane fade show active" id="tabAnalysis">
+                <div id="pestAnalysis" class="small" style="white-space:pre-wrap;max-height:400px;overflow-y:auto"></div>
+              </div>
+              <div class="tab-pane fade" id="tabOrganic">
+                <div id="pestOrganic" class="small" style="white-space:pre-wrap"></div>
+              </div>
+              <div class="tab-pane fade" id="tabChemical">
+                <div id="pestChemical" class="small" style="white-space:pre-wrap"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Drop zone
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('imageUpload');
+dropZone.addEventListener('click', ()=>fileInput.click());
+dropZone.addEventListener('dragover', e=>{e.preventDefault();dropZone.classList.add('drag-over');});
+dropZone.addEventListener('dragleave', ()=>dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e=>{
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  if(e.dataTransfer.files[0]) { fileInput.files = e.dataTransfer.files; showPreview(e.dataTransfer.files[0]); }
+});
+fileInput.addEventListener('change', ()=>{ if(fileInput.files[0]) showPreview(fileInput.files[0]); });
+
+function showPreview(f) {
+  const reader = new FileReader();
+  reader.onload = e => { document.getElementById('previewImg').src = e.target.result; document.getElementById('previewImg').classList.remove('d-none'); };
+  reader.readAsDataURL(f);
+}
+
+document.getElementById('detectPestBtn').addEventListener('click', ()=>{
+  document.getElementById('pestSpinner').classList.remove('d-none');
+  const fd = new FormData();
+  if(fileInput.files[0]) fd.append('image', fileInput.files[0]);
+  fd.append('crop', document.getElementById('pestCrop').value);
+  fd.append('symptoms', document.getElementById('symptoms').value);
+  fd.append('affected_area', document.getElementById('affectedArea').value);
+  fd.append('duration', document.getElementById('duration').value);
+  fd.append('location', 'India');
+
+  fetch('/api/pest',{method:'POST',body:fd})
+  .then(r=>r.json())
+  .then(d=>{
+    if(d.error){alert(d.error);return;}
+    document.getElementById('pestPlaceholder').classList.add('d-none');
+    document.getElementById('pestResult').classList.remove('d-none');
+    document.getElementById('pestConfidence').textContent = `Confidence: ${Math.round((d.confidence_score||0)*100)}%`;
+    const riskColor = d.risk_level==='High'?'danger':d.risk_level==='Medium'?'warning':'success';
+    document.getElementById('pestSummaryCards').innerHTML = `
+      <div class="col-6"><div class="alert alert-${riskColor} py-2 small mb-0"><strong>Risk:</strong> ${d.risk_level||'Low'}</div></div>
+      <div class="col-6"><div class="alert alert-info py-2 small mb-0"><strong>Summary:</strong> ${(d.problem_summary||'').slice(0,60)}</div></div>`;
+    document.getElementById('pestAnalysis').textContent = d.analysis||'';
+    document.getElementById('pestOrganic').textContent = d.alternative_option||'No organic recommendations.';
+    document.getElementById('pestChemical').textContent = d.recommended_action||'See full analysis tab.';
+  })
+  .catch(e=>alert('Error: '+e))
+  .finally(()=>document.getElementById('pestSpinner').classList.add('d-none'));
+});
+</script>
+{% endblock %}

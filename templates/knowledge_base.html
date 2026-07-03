@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+{% block title %}Knowledge Base{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-journal-bookmarks-fill text-secondary fs-3"></i>
+    <h4 class="fw-bold mb-0">Knowledge Base & Government Schemes</h4>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-6">
+      <div class="input-group">
+        <input type="text" id="schemeSearch" class="form-control" placeholder="Search schemes…">
+        <button class="btn btn-outline-secondary" id="searchSchemeBtn"><i class="bi bi-search"></i></button>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <select id="categoryFilter" class="form-select">
+        <option value="">All Categories</option>
+        {% for cat in ['Income Support','Crop Insurance','Irrigation','Soil Health','Market Access','Credit','Price Support','Agri-business'] %}
+        <option>{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="row g-3" id="schemeCards">
+    {% for scheme in schemes %}
+    <div class="col-md-6 scheme-card" data-category="{{ scheme.category }}">
+      <div class="card border-0 shadow-sm h-100">
+        <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">{{ scheme.name }}</span>
+          <span class="badge bg-secondary small">{{ scheme.category }}</span>
+        </div>
+        <div class="card-body small">
+          <p class="text-muted mb-2">{{ scheme.full_name }}</p>
+          <p><strong>Benefit:</strong> {{ scheme.benefit }}</p>
+          <p><strong>Eligibility:</strong> {{ scheme.eligibility }}</p>
+          <p class="mb-1"><strong>How to Apply:</strong> {{ scheme.application }}</p>
+          <a href="{{ scheme.website }}" target="_blank" class="btn btn-sm btn-outline-primary mt-2">
+            <i class="bi bi-box-arrow-up-right me-1"></i>Official Website
+          </a>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- RAG Q&A -->
+  <div class="card border-0 shadow-sm mt-5">
+    <div class="card-header bg-transparent fw-semibold">
+      <i class="bi bi-cpu me-2 text-success"></i>Ask Knowledge Base (RAG)
+    </div>
+    <div class="card-body">
+      <div class="input-group mb-3">
+        <input type="text" id="ragQuery" class="form-control" placeholder="e.g. How do I apply for PM-KISAN?">
+        <button class="btn btn-success" id="ragBtn">
+          <span id="ragSpinner" class="spinner-border spinner-border-sm d-none me-1"></span>Ask AI
+        </button>
+      </div>
+      <div id="ragAnswer" class="d-none">
+        <div class="alert alert-success small" style="white-space:pre-wrap" id="ragText"></div>
+        <div class="text-muted small" id="ragSources"></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Category filter
+document.getElementById('categoryFilter').addEventListener('change', function() {
+  const cat = this.value.toLowerCase();
+  document.querySelectorAll('.scheme-card').forEach(c=>{
+    c.style.display = (!cat || c.dataset.category.toLowerCase().includes(cat)) ? '' : 'none';
+  });
+});
+
+// RAG query
+document.getElementById('ragBtn').addEventListener('click', ()=>{
+  const q = document.getElementById('ragQuery').value.trim();
+  if(!q) return;
+  document.getElementById('ragSpinner').classList.remove('d-none');
+  fetch('/api/rag',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({query:q})})
+  .then(r=>r.json())
+  .then(d=>{
+    document.getElementById('ragAnswer').classList.remove('d-none');
+    document.getElementById('ragText').textContent = d.answer||d.error||'No answer.';
+    document.getElementById('ragSources').textContent = d.sources?.length ? 'Sources: '+d.sources.join(', ') : '';
+  })
+  .catch(e=>alert('Error: '+e))
+  .finally(()=>document.getElementById('ragSpinner').classList.add('d-none'));
+});
+</script>
+{% endblock %}

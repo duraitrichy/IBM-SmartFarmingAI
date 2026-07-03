@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Home{% endblock %}
+{% block content %}
+
+<!-- Hero Section -->
+<section class="hero-section text-white py-5">
+  <div class="container py-4">
+    <div class="row align-items-center">
+      <div class="col-lg-7">
+        <span class="badge bg-success mb-3 px-3 py-2 fs-6">Powered by IBM Granite AI</span>
+        <h1 class="display-4 fw-bold mb-3">
+          AI-Powered <span class="text-success">Smart Farming</span> for Every Farmer
+        </h1>
+        <p class="lead mb-4 text-light">
+          Get personalized crop advice, real-time weather insights, soil health analysis,
+          pest detection, and market intelligence — all in one platform powered by
+          <strong>IBM watsonx.ai</strong> and <strong>IBM Granite Models</strong>.
+        </p>
+        <div class="d-flex flex-wrap gap-3">
+          <a href="/chat" class="btn btn-success btn-lg px-4 shadow">
+            <i class="bi bi-chat-dots me-2"></i>Ask AI Now
+          </a>
+          <a href="/dashboard" class="btn btn-outline-light btn-lg px-4">
+            <i class="bi bi-speedometer2 me-2"></i>Open Dashboard
+          </a>
+        </div>
+      </div>
+      <div class="col-lg-5 text-center d-none d-lg-block">
+        <div class="hero-icon-grid mt-4">
+          <div class="row g-3">
+            {% for item in [
+              ('bi-cloud-sun','Weather','text-info'),
+              ('bi-flower2','Crop AI','text-success'),
+              ('bi-layers','Soil Health','text-warning'),
+              ('bi-bug','Pest Detect','text-danger'),
+              ('bi-graph-up','Market','text-primary'),
+              ('bi-journal-bookmarks','Schemes','text-light')
+            ] %}
+            <div class="col-4">
+              <div class="card bg-dark bg-opacity-50 border-0 p-3 text-center rounded-3">
+                <i class="bi {{ item[0] }} fs-2 {{ item[2] }}"></i>
+                <div class="small mt-1 text-muted">{{ item[1] }}</div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Feature Cards -->
+<section class="py-5 bg-body-secondary">
+  <div class="container">
+    <h2 class="text-center fw-bold mb-5">Everything a Farmer Needs</h2>
+    <div class="row g-4">
+      {% for feat in [
+        ('bi-flower1','Crop Advisory','text-success','bg-success','Get personalised crop plans, seed recommendations, fertilizer schedules, and yield predictions.','/crop'),
+        ('bi-cloud-sun-fill','Weather Intelligence','text-info','bg-info','7-day forecasts, irrigation scheduling, rainfall predictions, and weather alerts.','/weather'),
+        ('bi-moisture','Soil Health','text-warning','bg-warning','Analyse N-P-K levels, pH, moisture and get soil improvement roadmaps.','/soil'),
+        ('bi-bug-fill','Pest Detection','text-danger','bg-danger','Upload leaf images for instant AI-powered disease identification and treatment.','/pest'),
+        ('bi-currency-rupee','Market Prices','text-primary','bg-primary','Live mandi prices, demand forecasts, profit estimations, and selling strategy.','/market'),
+        ('bi-bank2','Government Schemes','text-secondary','bg-secondary','Discover PM-KISAN, crop insurance, subsidies, and other welfare schemes.','/knowledge-base')
+      ] %}
+      <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm hover-card">
+          <div class="card-body p-4">
+            <div class="feature-icon {{ feat[3] }} bg-opacity-15 rounded-3 p-3 d-inline-block mb-3">
+              <i class="bi {{ feat[0] }} fs-3 {{ feat[2] }}"></i>
+            </div>
+            <h5 class="fw-bold">{{ feat[1] }}</h5>
+            <p class="text-muted small mb-3">{{ feat[4] }}</p>
+            <a href="{{ feat[5] }}" class="btn btn-sm btn-outline-secondary">Explore →</a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+<!-- IBM Stack Banner -->
+<section class="py-4 bg-dark text-white">
+  <div class="container text-center">
+    <p class="mb-2 text-muted small text-uppercase letter-spacing">Technology Stack</p>
+    <div class="d-flex flex-wrap justify-content-center gap-3">
+      {% for tech in ['IBM watsonx.ai','IBM Granite 3.x','LangChain RAG','ChromaDB','Flask + Python','Bootstrap 5'] %}
+      <span class="badge bg-secondary fs-6 px-3 py-2">{{ tech }}</span>
+      {% endfor %}
+    </div>
+  </div>
+</section>
+
+{% endblock %}

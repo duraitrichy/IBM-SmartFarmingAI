@@ -1,0 +1,5 @@
+# constraints.txt — pip constraint overrides
+# Forces chroma-hnswlib to 0.7.5 which has a pre-built cp312-win_amd64 wheel.
+# chromadb==0.5.23 declares ==0.7.6 but 0.7.6 has no pre-built wheel on PyPI.
+# A constraint (unlike a requirement) silently overrides declared deps.
+chroma-hnswlib==0.7.5

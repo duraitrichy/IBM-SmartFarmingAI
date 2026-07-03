@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Soil Health{% endblock %}
+{% block content %}
+<div class="container py-4">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-layers-fill text-warning fs-3"></i>
+    <div>
+      <h4 class="fw-bold mb-0">Soil Health Analysis</h4>
+      <small class="text-muted">NPK, pH and moisture analysis with AI recommendations</small>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-md-4">
+      <div class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent fw-semibold"><i class="bi bi-sliders me-2"></i>Soil Test Values</div>
+        <div class="card-body">
+          {% for f in [
+            ('ph','pH Level','7.0','3','10','0.1'),
+            ('nitrogen','Nitrogen N (kg/ha)','200','0','500','1'),
+            ('phosphorus','Phosphorus P (kg/ha)','15','0','200','1'),
+            ('potassium','Potassium K (kg/ha)','120','0','400','1'),
+            ('moisture','Moisture (%)','50','0','100','1'),
+            ('organic_matter','Organic Matter (%)','1.5','0','10','0.1')
+          ] %}
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">{{ f[1] }}</label>
+            <input type="number" id="soil_{{ f[0] }}" class="form-control" value="{{ f[2] }}" min="{{ f[3] }}" max="{{ f[4] }}" step="{{ f[5] }}">
+          </div>
+          {% endfor %}
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Soil Type</label>
+            <select id="soil_type" class="form-select">
+              {% for s in ['Loamy','Clay','Sandy','Alluvial','Black Cotton','Red','Laterite'] %}
+              <option>{{ s }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label small fw-semibold">Target Crop</label>
+            <input type="text" id="soil_crop" class="form-control" value="Rice">
+          </div>
+          <button class="btn btn-warning w-100" id="analyseSoilBtn">
+            <span id="soilSpinner" class="spinner-border spinner-border-sm d-none me-2"></span>
+            <i class="bi bi-stars me-1"></i>Analyse Soil
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-8">
+      <div id="soilPlaceholder" class="text-center text-muted py-5">
+        <i class="bi bi-layers fs-1 text-warning opacity-25"></i>
+        <p class="mt-3">Enter soil test values and click <strong>Analyse Soil</strong></p>
+      </div>
+      <div id="soilResult" class="d-none">
+        <!-- Soil Score -->
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-body text-center py-4">
+            <div id="soilScoreCircle" class="soil-score-circle mx-auto mb-2"></div>
+            <h5 class="fw-bold" id="soilScoreText"></h5>
+            <p class="text-muted small" id="soilFertility"></p>
+          </div>
+        </div>
+        <!-- Deficiencies -->
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-transparent fw-semibold"><i class="bi bi-exclamation-triangle me-2 text-warning"></i>Issues Found</div>
+          <div class="card-body" id="deficiencyList"></div>
+        </div>
+        <!-- Suitable Crops -->
+        <div class="card border-0 shadow-sm mb-3">
+          <div class="card-header bg-transparent fw-semibold"><i class="bi bi-flower2 me-2 text-success"></i>Suitable Crops</div>
+          <div class="card-body" id="suitableCrops"></div>
+        </div>
+        <!-- AI Analysis -->
+        <div class="card border-0 shadow-sm border-start border-4 border-warning">
+          <div class="card-header bg-transparent fw-semibold"><i class="bi bi-cpu me-2 text-warning"></i>IBM Granite AI Analysis</div>
+          <div class="card-body small" id="soilAiAnalysis" style="max-height:400px;overflow-y:auto;white-space:pre-wrap"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('analyseSoilBtn').addEventListener('click', ()=>{
+  document.getElementById('soilSpinner').classList.remove('d-none');
+  const payload = {
+    ph: parseFloat(document.getElementById('soil_ph').value),
+    nitrogen: parseFloat(document.getElementById('soil_nitrogen').value),
+    phosphorus: parseFloat(document.getElementById('soil_phosphorus').value),
+    potassium: parseFloat(document.getElementById('soil_potassium').value),
+    moisture: parseFloat(document.getElementById('soil_moisture').value),
+    organic_matter: parseFloat(document.getElementById('soil_organic_matter').value),
+    soil_type: document.getElementById('soil_type').value,
+    crop: document.getElementById('soil_crop').value,
+    location: 'India',
+  };
+  fetch('/api/soil',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)})
+  .then(r=>r.json())
+  .then(d=>{
+    document.getElementById('soilPlaceholder').classList.add('d-none');
+    document.getElementById('soilResult').classList.remove('d-none');
+    const t = d.tool_analysis, ai = d.ai_analysis;
+    const score = t.soil_health_score || ai.soil_score || 0;
+    const cls = score>=70?'text-success':score>=40?'text-warning':'text-danger';
+    document.getElementById('soilScoreCircle').innerHTML = `<div class="display-4 fw-bold ${cls}">${score}</div><div class="small text-muted">/100</div>`;
+    document.getElementById('soilScoreText').textContent = 'Soil Health Score';
+    document.getElementById('soilFertility').textContent = `Fertility: ${t.fertility_class||''}  |  pH: ${t.ph_status||''}`;
+    document.getElementById('deficiencyList').innerHTML = (t.deficiencies||[]).map(d=>`<div class="alert alert-warning py-1 small mb-1">${d}</div>`).join('') || '<p class="text-success small">No major deficiencies detected.</p>';
+    document.getElementById('suitableCrops').innerHTML = (t.suitable_crops||[]).map(c=>`<span class="badge bg-success me-1 mb-1">${c}</span>`).join('');
+    document.getElementById('soilAiAnalysis').textContent = ai.analysis || '';
+  })
+  .catch(e=>alert('Error: '+e))
+  .finally(()=>document.getElementById('soilSpinner').classList.add('d-none'));
+});
+</script>
+{% endblock %}

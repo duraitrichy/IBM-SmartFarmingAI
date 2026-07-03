@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% block title %}Farmer Profile{% endblock %}
+{% block content %}
+<div class="container py-4" style="max-width:800px">
+  <div class="d-flex align-items-center gap-2 mb-4">
+    <i class="bi bi-person-circle text-success fs-3"></i>
+    <h4 class="fw-bold mb-0">Farmer Profile</h4>
+  </div>
+
+  <form method="POST" action="/profile/save">
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-transparent fw-semibold"><i class="bi bi-person me-2"></i>Personal Information</div>
+      <div class="card-body row g-3">
+        <div class="col-md-6"><label class="form-label small fw-semibold">Full Name</label><input type="text" name="name" class="form-control" value="{{ farmer.name if farmer else '' }}" required></div>
+        <div class="col-md-3"><label class="form-label small fw-semibold">Age</label><input type="number" name="age" class="form-control" value="{{ farmer.age if farmer else '' }}"></div>
+        <div class="col-md-3"><label class="form-label small fw-semibold">Phone</label><input type="text" name="phone" class="form-control" value="{{ farmer.phone if farmer else '' }}"></div>
+        <div class="col-md-4"><label class="form-label small fw-semibold">Village</label><input type="text" name="village" class="form-control" value="{{ farmer.village if farmer else '' }}"></div>
+        <div class="col-md-4"><label class="form-label small fw-semibold">District</label><input type="text" name="district" class="form-control" value="{{ farmer.district if farmer else '' }}"></div>
+        <div class="col-md-4"><label class="form-label small fw-semibold">State</label><input type="text" name="state" class="form-control" value="{{ farmer.state if farmer else '' }}"></div>
+        <div class="col-md-6"><label class="form-label small fw-semibold">Email</label><input type="email" name="email" class="form-control" value="{{ farmer.email if farmer else '' }}"></div>
+        <div class="col-md-6"><label class="form-label small fw-semibold">Preferred Language</label>
+          <select name="preferred_language" class="form-select">
+            {% for lang in ['English','Hindi','Tamil','Telugu','Marathi','Kannada','Bengali'] %}
+            <option {% if farmer and farmer.preferred_language == lang %}selected{% endif %}>{{ lang }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-header bg-transparent fw-semibold"><i class="bi bi-geo-alt me-2"></i>Farm Details</div>
+      <div class="card-body row g-3">
+        <div class="col-md-4"><label class="form-label small fw-semibold">Farm Size (acres)</label><input type="number" name="farm_size" step="0.1" class="form-control" value="{{ farmer.farm_size if farmer else 1 }}"></div>
+        <div class="col-md-4"><label class="form-label small fw-semibold">Main Crop</label><input type="text" name="crop" class="form-control" value="{{ farmer.crop if farmer else '' }}"></div>
+        <div class="col-md-4"><label class="form-label small fw-semibold">Season</label>
+          <select name="season" class="form-select">
+            {% for s in ['Kharif','Rabi','Zaid','Perennial'] %}
+            <option {% if farmer and farmer.season == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4"><label class="form-label small fw-semibold">Budget (₹)</label><input type="number" name="budget" class="form-control" value="{{ farmer.budget if farmer else '' }}"></div>
+        <div class="col-md-4"><label class="form-label small fw-semibold">Experience (years)</label><input type="number" name="experience_years" class="form-control" value="{{ farmer.experience_years if farmer else 0 }}"></div>
+        <div class="col-md-4"><label class="form-label small fw-semibold">Water Source</label>
+          <select name="water_source" class="form-select">
+            {% for w in ['Rain-fed','Canal','Borewell','River','Drip Irrigation','Sprinkler'] %}
+            <option {% if farmer and farmer.water_source == w %}selected{% endif %}>{{ w }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6"><label class="form-label small fw-semibold">Previous Yield (quintals/acre)</label><input type="number" name="previous_yield" step="0.1" class="form-control" value="{{ farmer.previous_yield if farmer else '' }}"></div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-header bg-transparent fw-semibold"><i class="bi bi-layers me-2"></i>Soil Information</div>
+      <div class="card-body row g-3">
+        <div class="col-md-4"><label class="form-label small fw-semibold">Soil Type</label>
+          <select name="soil_type" class="form-select">
+            {% for s in ['Loamy','Clay','Sandy','Alluvial','Black Cotton','Red','Laterite'] %}
+            <option {% if farmer and farmer.soil_type == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-2"><label class="form-label small fw-semibold">pH</label><input type="number" name="soil_ph" step="0.1" class="form-control" value="{{ farmer.soil_ph if farmer else 7.0 }}"></div>
+        <div class="col-md-2"><label class="form-label small fw-semibold">N (kg/ha)</label><input type="number" name="nitrogen" class="form-control" value="{{ farmer.nitrogen if farmer else '' }}"></div>
+        <div class="col-md-2"><label class="form-label small fw-semibold">P (kg/ha)</label><input type="number" name="phosphorus" class="form-control" value="{{ farmer.phosphorus if farmer else '' }}"></div>
+        <div class="col-md-2"><label class="form-label small fw-semibold">K (kg/ha)</label><input type="number" name="potassium" class="form-control" value="{{ farmer.potassium if farmer else '' }}"></div>
+      </div>
+    </div>
+
+    <button type="submit" class="btn btn-success px-5"><i class="bi bi-save me-2"></i>Save Profile</button>
+    <a href="/dashboard" class="btn btn-outline-secondary ms-2">Cancel</a>
+  </form>
+</div>
+{% endblock %}

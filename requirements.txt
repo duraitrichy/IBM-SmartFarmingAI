@@ -1,0 +1,73 @@
+# Core Framework
+flask==3.0.3
+flask-sqlalchemy==3.1.1
+flask-session==0.8.0
+python-dotenv==1.0.1
+gunicorn==22.0.0
+
+# IBM watsonx.ai SDK
+ibm-watsonx-ai==1.1.2
+ibm-cloud-sdk-core==3.20.3
+
+# LangChain + RAG
+langchain==0.2.16
+langchain-community==0.2.16
+langchain-ibm==0.1.12
+# NOTE: langchain-chroma==0.1.4 requires chromadb<0.6; use community Chroma instead
+# (no separate package needed — it is part of langchain-community already)
+
+# Vector Database — see install instructions below (two commands required)
+# chromadb==0.5.23 declares chroma-hnswlib==0.7.6 which has NO pre-built wheel.
+# We install chromadb and its hnswlib dep separately before this file is read.
+# DO NOT add chroma-hnswlib here — it conflicts with chromadb's declared version.
+chromadb==0.5.23
+
+# PDF / Document Processing
+pypdf==4.3.1
+python-docx==1.1.2
+unstructured==0.15.0
+
+# Image Processing
+opencv-python-headless==4.10.0.84
+Pillow==10.4.0
+
+# HTTP & APIs
+requests==2.32.3
+httpx==0.27.0
+
+# Data & Analysis
+pandas==2.1.4
+numpy==1.26.4
+scikit-learn==1.5.1
+joblib==1.4.2
+
+# Report Generation
+reportlab==4.2.2
+openpyxl==3.1.5
+fpdf2==2.7.9
+
+# Database
+SQLAlchemy==2.0.31
+
+# Utilities
+python-dateutil==2.9.0
+pytz==2024.1
+# pydantic 2.x — required by langchain 0.2 / chromadb 0.5.
+# Do NOT downgrade to 1.x; chromadb 0.3.x needed pydantic<2 (incompatible).
+pydantic==2.8.2
+tiktoken==0.7.0
+# sentence-transformers is only needed for local fallback embeddings.
+# The project uses IBM Granite Embeddings (ibm-watsonx-ai) for RAG.
+# Uncomment below only if you need an offline embedding fallback:
+# sentence-transformers==3.0.1
+
+# Security
+werkzeug==3.0.3
+bleach==6.1.0
+
+# Testing
+pytest==8.3.2
+pytest-flask==1.3.0
+
+# Logging
+loguru==0.7.2
